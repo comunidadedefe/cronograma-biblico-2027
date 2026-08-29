@@ -10,6 +10,11 @@ if (!apiKey) {
   process.exit(1);
 }
 
+const headers = {
+  'Authorization': `Key ${apiKey}`,
+  'Content-Type': 'application/json'
+};
+
 function saoPauloDateISO(date = new Date()) {
   const parts = new Intl.DateTimeFormat('en-CA', {
     timeZone: 'America/Sao_Paulo',
@@ -45,39 +50,100 @@ if (!item) {
   process.exit(0);
 }
 
-const payload = {
-  app_id: APP_ID,
-  target_channel: 'push',
-  included_segments: ['Subscribed Users'],
-  headings: { en: 'Leitura bíblica de hoje' },
-  contents: { en: item.reading },
-  name: `Leitura bíblica ${dateISO}`,
-  url: SITE_URL
-};
+async function getSubscribedSegmentCount() {
+  try {
+    const listResponse = await fetch(`https://api.onesignal.com/apps/${APP_ID}/segments`, {
+      headers: { 'Authorization': `Key ${apiKey}` }
+    });
+    const listText = await listResponse.text();
+    let list = null;
+    try { list = JSON.parse(listText); } catch {}
 
-const response = await fetch('https://api.onesignal.com/notifications?c=push', {
-  method: 'POST',
-  headers: {
-    'Authorization': `Key ${apiKey}`,
-    'Content-Type': 'application/json'
-  },
-  body: JSON.stringify(payload)
-});
+    if (!listResponse.ok) {
+      console.log(`Could not inspect OneSignal segments (${listResponse.status}).`);
+      return null;
+    }
 
-const text = await response.text();
-let result = null;
-try { result = JSON.parse(text); } catch {}
+    const segment = list?.segments?.find(s => s.name === 'Subscribed Users');
+    if (!segment?.id) {
+      console.log('OneSignal diagnostic: segment "Subscribed Users" was not found for this App ID.');
+      return null;
+    }
 
-if (!response.ok) {
-  console.error(`OneSignal error ${response.status}: ${text}`);
+    const countResponse = await fetch(`https://api.onesignal.com/apps/${APP_ID}/segments/${segment.id}`, {
+      headers: { 'Authorization': `Key ${apiKey}` }
+    });
+    const countText = await countResponse.text();
+    let count = null;
+    try { count = JSON.parse(countText); } catch {}
+
+    if (countResponse.ok && Number.isFinite(count?.subscriber_count)) {
+      console.log(`OneSignal diagnostic: Subscribed Users = ${count.subscriber_count}`);
+      return count.subscriber_count;
+    }
+  } catch (error) {
+    console.log(`OneSignal diagnostic failed: ${error.message}`);
+  }
+  return null;
+}
+
+async function sendNotification(targeting) {
+  const payload = {
+    app_id: APP_ID,
+    target_channel: 'push',
+    headings: { en: 'Leitura bíblica de hoje' },
+    contents: { en: item.reading },
+    name: `Leitura bíblica ${dateISO}`,
+    url: SITE_URL,
+    ...targeting
+  };
+
+  const response = await fetch('https://api.onesignal.com/notifications', {
+    method: 'POST',
+    headers,
+    body: JSON.stringify(payload)
+  });
+
+  const text = await response.text();
+  let result = null;
+  try { result = JSON.parse(text); } catch {}
+  return { response, text, result };
+}
+
+const subscriberCount = await getSubscribedSegmentCount();
+
+let attempt = await sendNotification({ included_segments: ['Subscribed Users'] });
+
+if (!attempt.response.ok) {
+  console.error(`OneSignal error ${attempt.response.status}: ${attempt.text}`);
   process.exit(1);
 }
 
-if (!result?.id) {
-  const details = Array.isArray(result?.errors) ? result.errors.join('; ') : text;
-  console.error(`OneSignal did not create the notification: ${details}`);
+if (!attempt.result?.id) {
+  const details = Array.isArray(attempt.result?.errors) ? attempt.result.errors.join('; ') : attempt.text;
+  console.log(`Segment targeting did not create a notification: ${details}`);
+  console.log('Retrying with an activity filter to bypass the default segment...');
+
+  attempt = await sendNotification({
+    filters: [
+      { field: 'session_count', relation: '>', value: '0' }
+    ]
+  });
+}
+
+if (!attempt.response.ok) {
+  console.error(`OneSignal retry error ${attempt.response.status}: ${attempt.text}`);
+  process.exit(1);
+}
+
+if (!attempt.result?.id) {
+  const details = Array.isArray(attempt.result?.errors) ? attempt.result.errors.join('; ') : attempt.text;
+  console.error(`OneSignal did not create the notification after both targeting methods: ${details}`);
+  console.error(`Diagnostic subscriber count for App ID ${APP_ID}: ${subscriberCount ?? 'unknown'}`);
+  console.error('If the OneSignal dashboard shows subscribed devices but this count is 0, compare the dashboard App ID in Settings > Keys & IDs with the App ID printed above.');
   process.exit(1);
 }
 
 console.log(`Notification sent for ${dateISO}: ${item.reading}`);
-console.log(`OneSignal notification id: ${result.id}`);
+console.log(`OneSignal notification id: ${attempt.result.id}`);
+console.log(`Recipients reported by OneSignal: ${attempt.result.recipients ?? 'not reported'}`);
