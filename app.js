@@ -3,9 +3,9 @@ const PLAN = window.READING_PLAN;
 const state = {
   view: "today",
   selectedDate: null,
-  calendarMonth: 0
+  calendarMonth: 0,
+  monthPickerOpen: false
 };
-
 
 const themeStorageKey = "cronograma-biblico-2027-theme";
 
@@ -19,7 +19,7 @@ function applyTheme(theme){
   document.documentElement.setAttribute("data-theme", theme);
   localStorage.setItem(themeStorageKey, theme);
   const meta = document.querySelector('meta[name="theme-color"]');
-  if(meta) meta.setAttribute("content", theme === "dark" ? "#111315" : "#f4efe6");
+  if(meta) meta.setAttribute("content", theme === "dark" ? "#050506" : "#f4f4f1");
   const toggle = document.getElementById("themeToggle");
   if(toggle){
     const target = theme === "dark" ? "claro" : "escuro";
@@ -71,9 +71,17 @@ function toggleDone(iso){
   if(completed.has(iso)) completed.delete(iso); else completed.add(iso);
   saveCompleted(); render();
 }
+function monthPlanItems(monthIndex){
+  return PLAN.filter(x => dateObj(x.date).getMonth() === monthIndex);
+}
+function bannerMonthClass(iso){
+  const month = String(dateObj(iso).getMonth() + 1).padStart(2,"0");
+  return `month-${month}`;
+}
 function hero(period){
-  return `<section class="hero">
-    <div class="hero-art"></div>
+  return `<section class="hero" data-period="${period.periodKey || ""}">
+    <div class="hero-image ${bannerMonthClass(period.date)}" aria-hidden="true"></div>
+    <div class="hero-shade"></div>
     <div class="hero-copy">
       <span class="hero-badge">${period.period}</span>
       <h2>${period.period}</h2>
@@ -88,7 +96,7 @@ function readingCard(item){
     <div class="date-label">${fmtLong(item.date)}</div>
     <div class="pill">Dia ${item.day} de 365</div>
     <h2 class="reading-title">${item.reading}</h2>
-    <div class="reading-subtitle">${isReview ? "Dia flexível do plano" : "Leitura de hoje"}</div>
+    <div class="reading-subtitle">${isReview ? "Dia flexível do plano" : "Leitura do dia"}</div>
     <button class="primary ${done ? "done" : ""}" onclick="toggleDone('${item.date}')">${done ? "✓ Lido" : isReview ? "✓ Marcar revisão como concluída" : "✓ Marcar como lido"}</button>
   </section>`;
 }
@@ -100,9 +108,9 @@ function todayView(){
   const next = adjacent(item,1);
   const p = percentage();
   return `${hero(item)}
-    ${item.day > 355 ? `<div class="notice">O PDF-base encerra a leitura bíblica no Dia 355, em 21/12. Os dias 22 a 31/12 foram mantidos como revisão/recuperação para preservar exatamente a ordem do PDF.</div>` : ""}
+    ${item.day > 355 ? `<div class="notice">As leituras principais terminam em 21/12. Estes dias finais servem para revisão e recuperação.</div>` : ""}
     ${readingCard(item)}
-    ${next ? `<section class="card mini-row" onclick="openDetail('${next.date}')">
+    ${next ? `<section class="card mini-row interactive-card" onclick="openDetail('${next.date}')">
       <div><div class="label">Próxima leitura</div><div class="value">${fmtShort(next.date)} · ${next.reading}</div></div><span class="chev">›</span>
     </section>` : ""}
     <section class="card">
@@ -110,14 +118,31 @@ function todayView(){
       <div class="progress-track"><div class="progress-bar" style="width:${p.pct}%"></div></div>
     </section>`;
 }
+function toggleMonthPicker(){
+  state.monthPickerOpen = !state.monthPickerOpen;
+  render();
+}
+function selectMonth(monthIndex){
+  state.calendarMonth = monthIndex;
+  state.monthPickerOpen = false;
+  render();
+}
+function changeMonth(delta){
+  state.calendarMonth = Math.max(0,Math.min(11,state.calendarMonth + delta));
+  state.monthPickerOpen = false;
+  render();
+}
 function calendarView(){
   const m = state.calendarMonth;
   const first = new Date(2027,m,1);
   const days = new Date(2027,m+1,0).getDate();
-  // Monday-first index
   const start = (first.getDay()+6)%7;
   const cells = [];
   const prevDays = new Date(2027,m,0).getDate();
+  const monthItems = monthPlanItems(m);
+  const firstReading = monthItems[0];
+  const lastReading = monthItems[monthItems.length - 1];
+
   for(let i=0;i<start;i++){
     cells.push(`<button class="day out">${prevDays-start+i+1}</button>`);
   }
@@ -132,15 +157,41 @@ function calendarView(){
     cells.push(`<button class="${classes.join(" ")}" ${item ? `onclick="openDetail('${iso}')"` : ""}>${d}</button>`);
   }
   while(cells.length%7) cells.push(`<button class="day out"></button>`);
-  const focus = PLAN.find(x => dateObj(x.date).getMonth()===m) || PLAN[0];
-  return `<div class="month-head"><button onclick="changeMonth(-1)">‹</button><h2>${months[m]} 2027</h2><button onclick="changeMonth(1)">›</button></div>
+
+  return `
+    <div class="month-head">
+      <button onclick="changeMonth(-1)" aria-label="Mês anterior">‹</button>
+      <button class="month-select-trigger" onclick="toggleMonthPicker()" aria-expanded="${state.monthPickerOpen ? "true" : "false"}">
+        ${months[m]} 2027 <span class="month-select-caret">${state.monthPickerOpen ? "▴" : "▾"}</span>
+      </button>
+      <button onclick="changeMonth(1)" aria-label="Próximo mês">›</button>
+    </div>
+
+    ${state.monthPickerOpen ? `
+      <section class="card month-picker-sheet">
+        <div class="month-grid">
+          ${months.map((month, idx) => `<button class="month-chip ${idx===m ? "active" : ""}" onclick="selectMonth(${idx})">${month}</button>`).join("")}
+        </div>
+      </section>` : ""}
+
     <div class="weekdays">${["SEG","TER","QUA","QUI","SEX","SÁB","DOM"].map(x=>`<span>${x}</span>`).join("")}</div>
     <div class="calendar-grid">${cells.join("")}</div>
+
     <h3 class="section-title">Neste mês</h3>
-    <section class="card">
-      <div class="mini-row"><div><div class="label">Primeira leitura do mês</div><div class="value">${focus.reading}</div></div><span class="chev">›</span></div>
+    <section class="card month-summary-card">
+      <div class="month-summary-grid">
+        <div class="month-summary-item">
+          <div class="label">Primeira leitura do mês</div>
+          <div class="value">${firstReading ? `${fmtShort(firstReading.date)} · ${firstReading.reading}` : "—"}</div>
+        </div>
+        <div class="month-summary-item">
+          <div class="label">Última leitura do mês</div>
+          <div class="value">${lastReading ? `${fmtShort(lastReading.date)} · ${lastReading.reading}` : "—"}</div>
+        </div>
+      </div>
     </section>
-    <div class="notice">Toque em qualquer dia do plano para abrir a leitura. Verde = concluído, dourado = hoje, lilás = revisão.</div>`;
+
+    <div class="notice">Toque em qualquer dia do plano para abrir a leitura.</div>`;
 }
 const periodData = [
   ["Origens e Patriarcas","01 jan – 27 jan","Gênesis + Jó","origens"],
@@ -155,15 +206,14 @@ const periodData = [
   ["Consumação","14 dez – 21 dez","Judas + Apocalipse","consumacao"],
 ];
 function timelineView(){
-  return `<h2> Linha do Tempo</h2><p class="reading-subtitle">A ordem abaixo acompanha o fluxo adotado no PDF-base.</p>
-  ${periodData.map((p,i)=>`<section class="timeline-card">
+  return `<h2>Linha do Tempo</h2>
+  ${periodData.map((p,i)=>`<section class="timeline-card" data-period="${p[3]}">
     <div class="timeline-art"></div>
     <div><h3>${String(i+1).padStart(2,"0")} ${p[0]}</h3><p class="range">${p[1]}</p><p>${p[2]}</p></div>
   </section>`).join("")}`;
 }
 function extractBooks(){
-  const names = ["Gênesis","Jó","Êxodo","Levítico","Números","Deuteronômio","Josué","Juízes","Rute","1 Samuel","Salmos","2 Samuel","1 Reis","Cântico dos Cânticos","Provérbios","Eclesiastes","2 Reis","Obadias","Joel","Amós","Jonas","Oséias","Miquéias","Isaías","Naum","Sofonias","Habacuque","Jeremias","Lamentações","1 Crônicas","2 Crônicas","Ezequiel","Daniel","Esdras","Ageu","Zacarias","Ester","Neemias","Malaquias","Mateus","Marcos","Lucas","João","Atos","Tiago","Gálatas","1 Tessalonicenses","2 Tessalonicenses","1 Coríntios","2 Coríntios","Romanos","Efésios","Filipenses","Colossenses","Filemom","1 Timóteo","Tito","2 Timóteo","Hebreus","1 Pedro","2 Pedro","1 João","2 João","3 João","Judas","Apocalipse"];
-  return names;
+  return ["Gênesis","Jó","Êxodo","Levítico","Números","Deuteronômio","Josué","Juízes","Rute","1 Samuel","Salmos","2 Samuel","1 Reis","Cântico dos Cânticos","Provérbios","Eclesiastes","2 Reis","Obadias","Joel","Amós","Jonas","Oséias","Miquéias","Isaías","Naum","Sofonias","Habacuque","Jeremias","Lamentações","1 Crônicas","2 Crônicas","Ezequiel","Daniel","Esdras","Ageu","Zacarias","Ester","Neemias","Malaquias","Mateus","Marcos","Lucas","João","Atos","Tiago","Gálatas","1 Tessalonicenses","2 Tessalonicenses","1 Coríntios","2 Coríntios","Romanos","Efésios","Filipenses","Colossenses","Filemom","1 Timóteo","Tito","2 Timóteo","Hebreus","1 Pedro","2 Pedro","1 João","2 João","3 João","Judas","Apocalipse"];
 }
 function bookCompleted(name){
   const relevant = PLAN.filter(x => !x.review && x.reading.includes(name));
@@ -192,36 +242,35 @@ function detailView(){
   const prev = adjacent(item,-1), next = adjacent(item,1);
   return `${hero(item).replace("hero","hero detail-hero")}
     ${readingCard(item)}
-    <section class="card context-card">
-      <strong>Contexto</strong>
-      <p style="margin:7px 0 0;line-height:1.5;font-size:14px">${item.periodSubtitle}. Esta camada serve apenas para localização histórica geral; a ordem diária permanece a do PDF.</p>
-    </section>
     <div class="secondary-row">
       ${prev ? `<button class="secondary" onclick="openDetail('${prev.date}')">‹ Ontem<br><small>${prev.reading}</small></button>` : ""}
       ${next ? `<button class="secondary" onclick="openDetail('${next.date}')">Amanhã ›<br><small>${next.reading}</small></button>` : ""}
     </div>`;
 }
-function changeMonth(delta){
-  state.calendarMonth = Math.max(0,Math.min(11,state.calendarMonth+delta)); render();
-}
 function openDetail(iso){
-  state.selectedDate = iso; state.view = "detail"; render();
+  state.selectedDate = iso;
+  state.view = "detail";
+  state.monthPickerOpen = false;
+  render();
   window.scrollTo({top:0,behavior:"smooth"});
 }
 function setView(view){
   state.view = view;
   if(view==="today") state.selectedDate = null;
-  document.querySelectorAll(".nav-item").forEach(b => b.classList.toggle("active", b.dataset.view===view));
+  state.monthPickerOpen = false;
   render();
   window.scrollTo({top:0,behavior:"smooth"});
 }
 function render(){
   const app = document.getElementById("app");
-  if(state.view==="calendar") app.innerHTML = calendarView();
-  else if(state.view==="timeline") app.innerHTML = timelineView();
-  else if(state.view==="progress") app.innerHTML = progressView();
-  else if(state.view==="detail") app.innerHTML = detailView();
-  else app.innerHTML = todayView();
+  let viewContent = "";
+  if(state.view==="calendar") viewContent = calendarView();
+  else if(state.view==="timeline") viewContent = timelineView();
+  else if(state.view==="progress") viewContent = progressView();
+  else if(state.view==="detail") viewContent = detailView();
+  else viewContent = todayView();
+
+  app.innerHTML = `<div class="view-shell">${viewContent}</div>`;
 
   document.querySelectorAll(".nav-item").forEach(b => {
     const activeView = state.view==="detail" ? "today" : state.view;
