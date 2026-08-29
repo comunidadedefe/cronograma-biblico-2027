@@ -1,17 +1,17 @@
 /* Visual V5: banners mensais em alta resolução com fallback para o sprite antigo. */
 const HQ_MONTH_BANNERS = [
-  "banners/01-janeiro.webp",
-  "banners/02-fevereiro.webp",
-  "banners/03-marco.webp",
-  "banners/04-abril.webp",
-  "banners/05-maio.webp",
-  "banners/06-junho.webp",
-  "banners/07-julho.webp",
-  "banners/08-agosto.webp",
-  "banners/09-setembro.webp",
-  "banners/10-outubro.webp",
-  "banners/11-novembro.webp",
-  "banners/12-dezembro.webp"
+  "01-janeiro.webp",
+  "02-fevereiro.webp",
+  "03-marco.webp",
+  "04-abril.webp",
+  "05-maio.webp",
+  "06-junho.webp",
+  "07-julho.webp",
+  "08-agosto.webp",
+  "09-setembro.webp",
+  "10-outubro.webp",
+  "11-novembro.webp",
+  "12-dezembro.webp"
 ];
 
 hero = function(item){
