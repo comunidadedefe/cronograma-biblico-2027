@@ -1,4 +1,4 @@
-const CACHE = "biblia-2027-v13";
+const CACHE = "biblia-2027-v14";
 const ASSETS = [
   "./","./index.html","./styles.css","./enhancements.css","./visual-v5.css","./app.js","./calendar-data-2027.js","./calendar-2027.js","./visual-v5.js","./onesignal.js","./data.js","./manifest.webmanifest","./icon.svg",
   "./01-janeiro.webp","./02-fevereiro.webp","./03-marco.webp","./04-abril.webp","./05-maio.webp","./06-junho.webp",
