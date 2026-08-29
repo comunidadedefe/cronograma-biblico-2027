@@ -1,4 +1,5 @@
-/* Visual V5: banners mensais em alta resolução com fallback para o sprite antigo. */
+/* Visual V5: banners mensais em alta resolução com cache-busting. */
+const HQ_BANNER_VERSION = "hq-2027-v2";
 const HQ_MONTH_BANNERS = [
   "01-janeiro.webp",
   "02-fevereiro.webp",
@@ -17,9 +18,10 @@ const HQ_MONTH_BANNERS = [
 hero = function(item){
   const monthIndex = dateObj(item.date).getMonth();
   const monthClass = `month-${String(monthIndex + 1).padStart(2,"0")}`;
+  const src = `${HQ_MONTH_BANNERS[monthIndex]}?v=${HQ_BANNER_VERSION}`;
   return `<section class="hero monthly-hero">
     <div class="hero-fallback ${monthClass}" aria-hidden="true"></div>
-    <img class="hero-image-hq" src="${HQ_MONTH_BANNERS[monthIndex]}" alt="Ilustração bíblica de ${months[monthIndex]}" loading="eager" decoding="async" onerror="this.style.display='none'">
+    <img class="hero-image-hq" src="${src}" alt="Ilustração bíblica de ${months[monthIndex]}" loading="eager" decoding="async" onerror="this.style.display='none'">
     <div class="hero-shade" aria-hidden="true"></div>
   </section>`;
 };
