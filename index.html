@@ -12,6 +12,7 @@
   <link rel="stylesheet" href="styles.css" />
   <link rel="stylesheet" href="enhancements.css" />
   <link rel="stylesheet" href="visual-v5.css?v=10" />
+  <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
 </head>
 <body>
   <div class="app-shell">
@@ -21,6 +22,7 @@
         <h1>2027</h1>
       </div>
       <div class="top-actions">
+        <button class="icon-btn" id="pushToggle" hidden aria-label="Ativar notificações" title="Ativar notificações">♢</button>
         <button class="icon-btn" id="jumpToday" aria-label="Ir para hoje" title="Ir para hoje">⌖</button>
         <button class="icon-btn theme-toggle" id="themeToggle" aria-label="Alternar modo claro e escuro" title="Alternar tema">
           <span class="theme-icon theme-icon-sun" aria-hidden="true">☀</span>
@@ -53,6 +55,7 @@
   <script src="app.js"></script>
   <script src="calendar-2027.js"></script>
   <script src="visual-v5.js?v=10"></script>
+  <script src="onesignal.js?v=1"></script>
   <script>
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.getRegistration().then(reg => reg && reg.update()).catch(() => {});
