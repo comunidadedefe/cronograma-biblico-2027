@@ -1,6 +1,6 @@
-const CACHE = "biblia-2027-v10";
+const CACHE = "biblia-2027-v11";
 const ASSETS = [
-  "./","./index.html","./styles.css","./enhancements.css","./visual-v5.css","./app.js","./calendar-data-2027.js","./calendar-2027.js","./visual-v5.js","./data.js","./manifest.webmanifest","./icon.svg",
+  "./","./index.html","./styles.css","./enhancements.css","./visual-v5.css","./app.js","./calendar-data-2027.js","./calendar-2027.js","./visual-v5.js","./onesignal.js","./data.js","./manifest.webmanifest","./icon.svg",
   "./01-janeiro.webp","./02-fevereiro.webp","./03-marco.webp","./04-abril.webp","./05-maio.webp","./06-junho.webp",
   "./07-julho.webp","./08-agosto.webp","./09-setembro.webp","./10-outubro.webp","./11-novembro.webp","./12-dezembro.webp",
   "./banner-data/chunk01.js","./banner-data/chunk02.js","./banner-data/chunk03.js","./banner-data/chunk04.js",
