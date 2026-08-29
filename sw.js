@@ -1,4 +1,4 @@
-const CACHE = "biblia-2027-v9";
+const CACHE = "biblia-2027-v10";
 const ASSETS = [
   "./","./index.html","./styles.css","./enhancements.css","./visual-v5.css","./app.js","./calendar-data-2027.js","./calendar-2027.js","./visual-v5.js","./data.js","./manifest.webmanifest","./icon.svg",
   "./01-janeiro.webp","./02-fevereiro.webp","./03-marco.webp","./04-abril.webp","./05-maio.webp","./06-junho.webp",
@@ -20,5 +20,28 @@ self.addEventListener("activate", event => {
 });
 
 self.addEventListener("fetch", event => {
-  event.respondWith(caches.match(event.request).then(response => response || fetch(event.request)));
+  const request = event.request;
+  const url = new URL(request.url);
+  const isFreshAsset = request.mode === "navigate" || /\.(?:html|js|css)$/.test(url.pathname);
+
+  if (isFreshAsset) {
+    event.respondWith(
+      fetch(request)
+        .then(response => {
+          const copy = response.clone();
+          caches.open(CACHE).then(cache => cache.put(request, copy));
+          return response;
+        })
+        .catch(() => caches.match(request))
+    );
+    return;
+  }
+
+  event.respondWith(
+    caches.match(request).then(cached => cached || fetch(request).then(response => {
+      const copy = response.clone();
+      caches.open(CACHE).then(cache => cache.put(request, copy));
+      return response;
+    }))
+  );
 });
