@@ -65,10 +65,19 @@ const response = await fetch('https://api.onesignal.com/notifications?c=push', {
 });
 
 const text = await response.text();
+let result = null;
+try { result = JSON.parse(text); } catch {}
+
 if (!response.ok) {
   console.error(`OneSignal error ${response.status}: ${text}`);
   process.exit(1);
 }
 
+if (!result?.id) {
+  const details = Array.isArray(result?.errors) ? result.errors.join('; ') : text;
+  console.error(`OneSignal did not create the notification: ${details}`);
+  process.exit(1);
+}
+
 console.log(`Notification sent for ${dateISO}: ${item.reading}`);
-console.log(text);
+console.log(`OneSignal notification id: ${result.id}`);
