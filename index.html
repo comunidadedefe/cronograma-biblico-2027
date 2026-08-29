@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#f7f3ea" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <title>Cronograma Bíblico 2027</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <div>
+        <div class="eyebrow">CRONOGRAMA BÍBLICO</div>
+        <h1>2027</h1>
+      </div>
+      <div class="top-actions">
+        <button class="icon-btn" id="jumpToday" aria-label="Ir para hoje" title="Ir para hoje">⌖</button>
+        <button class="icon-btn theme-toggle" id="themeToggle" aria-label="Alternar modo claro e escuro" title="Alternar tema">
+          <span class="theme-icon theme-icon-sun" aria-hidden="true">☀</span>
+          <span class="theme-icon theme-icon-moon" aria-hidden="true">☾</span>
+        </button>
+      </div>
+    </header>
+
+    <main id="app"></main>
+
+    <nav class="bottom-nav" aria-label="Navegação principal">
+      <button data-view="today" class="nav-item active">
+        <span class="nav-icon">⌂</span><span>Hoje</span>
+      </button>
+      <button data-view="calendar" class="nav-item">
+        <span class="nav-icon">▦</span><span>Calendário</span>
+      </button>
+      <button data-view="timeline" class="nav-item">
+        <span class="nav-icon">⌘</span><span>Linha do Tempo</span>
+      </button>
+      <button data-view="progress" class="nav-item">
+        <span class="nav-icon">▥</span><span>Progresso</span>
+      </button>
+    </nav>
+  </div>
+
+  <script src="data.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
