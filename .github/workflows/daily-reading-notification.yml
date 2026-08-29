@@ -1,0 +1,36 @@
+name: Notificação diária da leitura
+
+on:
+  schedule:
+    # 08:00 em America/Sao_Paulo (UTC-3) = 11:00 UTC
+    - cron: '0 11 * * *'
+  workflow_dispatch:
+    inputs:
+      date:
+        description: 'Data de teste no formato YYYY-MM-DD (opcional)'
+        required: false
+        type: string
+
+jobs:
+  send-notification:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Baixar repositório
+        uses: actions/checkout@v4
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Enviar leitura do dia
+        env:
+          ONESIGNAL_APP_API_KEY: ${{ secrets.ONESIGNAL_APP_API_KEY }}
+        run: |
+          if [ -n "${{ inputs.date }}" ]; then
+            node scripts/send-daily-notification.mjs "${{ inputs.date }}"
+          else
+            node scripts/send-daily-notification.mjs
+          fi
