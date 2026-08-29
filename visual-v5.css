@@ -1,0 +1,67 @@
+/* Visual V5: acabamento minimalista + banners mensais de alta resolução */
+.monthly-hero{
+  height:clamp(210px,52vw,285px);
+  border-radius:28px;
+  overflow:hidden;
+  position:relative;
+  background:#111;
+  border:1px solid var(--line);
+  box-shadow:var(--glass-shadow,0 18px 50px rgba(0,0,0,.16));
+}
+.hero-fallback,
+.hero-image-hq{
+  position:absolute;
+  inset:0;
+  width:100%;
+  height:100%;
+}
+.hero-fallback{
+  background-image:var(--banner-sprite);
+  background-repeat:no-repeat;
+  background-size:400% 300%;
+  filter:saturate(.9) contrast(1.03) brightness(.86);
+}
+.hero-fallback.month-01{background-position:0% 0%}
+.hero-fallback.month-02{background-position:33.333% 0%}
+.hero-fallback.month-03{background-position:66.666% 0%}
+.hero-fallback.month-04{background-position:100% 0%}
+.hero-fallback.month-05{background-position:0% 50%}
+.hero-fallback.month-06{background-position:33.333% 50%}
+.hero-fallback.month-07{background-position:66.666% 50%}
+.hero-fallback.month-08{background-position:100% 50%}
+.hero-fallback.month-09{background-position:0% 100%}
+.hero-fallback.month-10{background-position:33.333% 100%}
+.hero-fallback.month-11{background-position:66.666% 100%}
+.hero-fallback.month-12{background-position:100% 100%}
+.hero-image-hq{
+  object-fit:cover;
+  object-position:center;
+  display:block;
+  transform:scale(1.002);
+  z-index:1;
+}
+.hero-shade{
+  position:absolute;
+  inset:0;
+  z-index:2;
+  pointer-events:none;
+  background:linear-gradient(180deg,rgba(0,0,0,.02),rgba(0,0,0,.14));
+}
+html[data-theme="dark"] .hero-image-hq{filter:brightness(.9) contrast(1.03)}
+html[data-theme="light"] .hero-image-hq{filter:contrast(1.02) saturate(.96)}
+.detail-hero{height:clamp(190px,46vw,250px)}
+
+.icon-btn,.primary,.secondary,.nav-item,.day,.month-head button,.month-select-trigger,.month-chip,.card,.timeline-card,.chev{
+  transition:transform .22s ease,background-color .22s ease,border-color .22s ease,color .22s ease,opacity .22s ease,box-shadow .22s ease,filter .22s ease;
+}
+@media (hover:hover){
+  .icon-btn:hover,.month-head button:hover,.month-chip:hover,.secondary:hover,.interactive-card:hover,.day.plan:hover{
+    transform:translateY(-1px);
+    border-color:var(--line-strong);
+  }
+  .primary:hover{transform:translateY(-1px);filter:brightness(1.05)}
+  .nav-item:hover{transform:translateY(-1px);color:var(--ink)}
+}
+@media (prefers-reduced-motion:reduce){
+  .icon-btn,.primary,.secondary,.nav-item,.day,.month-head button,.month-select-trigger,.month-chip,.card,.timeline-card,.chev{transition:none}
+}
