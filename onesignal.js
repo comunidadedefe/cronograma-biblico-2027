@@ -15,6 +15,20 @@ OneSignalDeferred.push(async function(OneSignal) {
   const button = document.getElementById("pushToggle");
   if (!button) return;
 
+  const bellOn = `
+    <svg class="top-icon push-bell" viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9" />
+      <path d="M10 21h4" />
+    </svg>`;
+
+  const bellOff = `
+    <svg class="top-icon push-bell" viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M18 8a6 6 0 0 0-10.2-4.3" />
+      <path d="M6 8c0 7-3 7-3 9h14" />
+      <path d="M10 21h4" />
+      <path d="M3 3l18 18" />
+    </svg>`;
+
   function updateButton() {
     const supported = OneSignal.Notifications.isPushSupported();
     button.hidden = !supported;
@@ -22,12 +36,14 @@ OneSignalDeferred.push(async function(OneSignal) {
 
     const permission = OneSignal.Notifications.permission;
     const optedIn = OneSignal.User.PushSubscription.optedIn;
-    const active = permission && optedIn;
+    const active = Boolean(permission && optedIn);
 
     button.classList.toggle("push-on", active);
+    button.classList.toggle("push-off", !active);
+    button.setAttribute("aria-pressed", active ? "true" : "false");
     button.setAttribute("aria-label", active ? "Desativar notificações" : "Ativar notificações");
-    button.setAttribute("title", active ? "Notificações ativadas" : "Ativar notificações");
-    button.textContent = active ? "✓" : "♢";
+    button.setAttribute("title", active ? "Notificações ativadas" : "Notificações desativadas");
+    button.innerHTML = active ? bellOn : bellOff;
   }
 
   button.addEventListener("click", async () => {
