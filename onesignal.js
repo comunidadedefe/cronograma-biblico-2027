@@ -23,15 +23,39 @@ OneSignalDeferred.push(async function(OneSignal) {
     button.disabled = busy;
   }
 
-  function setState(active, supported = true) {
+  function getPushState() {
+    const supported = OneSignal.Notifications.isPushSupported();
+    const permission = Boolean(OneSignal.Notifications.permission);
+    const optedIn = Boolean(OneSignal.User.PushSubscription.optedIn);
+    const id = OneSignal.User.PushSubscription.id || null;
+    const token = OneSignal.User.PushSubscription.token || null;
+    const active = Boolean(supported && permission && optedIn && id && token);
+    return { supported, permission, optedIn, id, token, active };
+  }
+
+  function setState(state) {
+    const { supported, active, permission, optedIn, id } = state;
     button.hidden = false;
     button.classList.toggle("push-on", active);
     button.classList.toggle("push-off", !active);
     button.classList.toggle("push-unsupported", !supported);
     button.setAttribute("aria-pressed", active ? "true" : "false");
     button.setAttribute("aria-label", active ? "Desativar notificações" : "Ativar notificações");
-    button.setAttribute("title", active ? "Notificações ativadas" : "Notificações desativadas");
+
+    let title = active ? "Notificações ativadas" : "Notificações desativadas";
+    if (supported && permission && optedIn && !id) title = "Finalizando inscrição das notificações";
+    button.setAttribute("title", title);
     button.innerHTML = active ? bellOn : bellOff;
+  }
+
+  async function waitForSubscription(timeoutMs = 10000) {
+    const start = Date.now();
+    while (Date.now() - start < timeoutMs) {
+      const state = getPushState();
+      if (state.active) return state;
+      await new Promise(resolve => setTimeout(resolve, 300));
+    }
+    return getPushState();
   }
 
   try {
@@ -47,7 +71,7 @@ OneSignalDeferred.push(async function(OneSignal) {
     });
   } catch (error) {
     console.error("Falha ao iniciar notificações:", error);
-    setState(false, false);
+    setState({ supported: false, active: false, permission: false, optedIn: false, id: null });
     button.addEventListener("click", () => {
       alert("As notificações não puderam ser iniciadas neste navegador. Atualize a página e tente novamente.");
     }, { once: true });
@@ -55,19 +79,15 @@ OneSignalDeferred.push(async function(OneSignal) {
   }
 
   function updateButton() {
-    const supported = OneSignal.Notifications.isPushSupported();
-    if (!supported) {
-      setState(false, false);
-      return;
-    }
-
-    const permission = OneSignal.Notifications.permission;
-    const optedIn = OneSignal.User.PushSubscription.optedIn;
-    setState(Boolean(permission && optedIn), true);
+    const state = getPushState();
+    setState(state);
+    return state;
   }
 
   button.addEventListener("click", async () => {
-    if (!OneSignal.Notifications.isPushSupported()) {
+    const initial = getPushState();
+
+    if (!initial.supported) {
       alert("Este navegador não oferece suporte a notificações web. No iPhone, instale o site na Tela de Início e abra por lá.");
       return;
     }
@@ -75,9 +95,7 @@ OneSignalDeferred.push(async function(OneSignal) {
     setBusy(true);
 
     try {
-      const active = Boolean(OneSignal.Notifications.permission && OneSignal.User.PushSubscription.optedIn);
-
-      if (active) {
+      if (initial.active) {
         await OneSignal.User.PushSubscription.optOut();
       } else {
         if (typeof Notification !== "undefined" && Notification.permission === "denied") {
@@ -91,13 +109,16 @@ OneSignalDeferred.push(async function(OneSignal) {
 
         if (OneSignal.Notifications.permission) {
           await OneSignal.User.PushSubscription.optIn();
+          const finalState = await waitForSubscription();
+          if (!finalState.active) {
+            console.warn("Permissão concedida, mas a assinatura push não foi criada.", finalState);
+            alert("O celular permitiu notificações, mas o OneSignal ainda não registrou este aparelho. Toque no sino novamente após alguns segundos. Se continuar assim, precisamos revisar a configuração Web Push no OneSignal.");
+          }
         }
       }
-
-      await new Promise(resolve => setTimeout(resolve, 250));
     } catch (error) {
       console.error("Falha ao alterar notificações:", error);
-      alert("Não foi possível alterar as notificações agora. Atualize a página e tente novamente.");
+      alert("Não foi possível concluir a inscrição das notificações agora. Atualize a página e tente novamente.");
     } finally {
       setBusy(false);
       updateButton();
